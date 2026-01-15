@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <title>Leitor de Código de Barras – Debug Total</title>
 
-<meta name="viewport"
-  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -90,7 +89,6 @@ pre{
 
 <script>
 let token = null;
-let stream = null;
 let lendo = false;
 let buscando = false;
 let ultimoCodigo = null;
@@ -105,6 +103,13 @@ function log(txt){
   debug.scrollTop = debug.scrollHeight;
 }
 
+// NORMALIZAÇÃO CORRETA (EAN / UPC)
+function normalizarCodigo(code){
+  const c = String(code).trim();
+  if (c.length >= 13) return c;
+  return "0" + c;
+}
+
 // ================= AUTH
 async function gerarToken(){
   if(token) return token;
@@ -114,66 +119,52 @@ async function gerarToken(){
   const raw = await resp.text();
 
   log("AUTH STATUS: " + resp.status);
-  log("AUTH RAW:");
   log(raw);
 
-  const json = JSON.parse(raw);
-  token = json.accessToken;
-
-  log("✅ TOKEN:");
-  log(token);
-
+  token = JSON.parse(raw).accessToken;
   return token;
 }
 
 // ================= CAMERA
 document.getElementById("btnCamera").onclick = async () => {
-  if(stream) return;
-
+  if(lendo) return;
   await gerarToken();
-
-  stream = await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:"environment"}
-  });
-
-  video.srcObject = stream;
-  await video.play();
-
   iniciarLeitura();
 };
 
 // ================= MANUAL
 document.getElementById("btnManual").onclick = async () => {
-  const code = document.getElementById("manual").value.trim();
-  if(!code) return;
+  const rawCode = document.getElementById("manual").value.trim();
+  if(!rawCode) return;
 
   await gerarToken();
-  buscarProduto(code);
+  buscarProduto(normalizarCodigo(rawCode));
 };
 
 // ================= QUAGGA
 function iniciarLeitura(){
-  if(lendo) return;
   lendo = true;
-
-  log("📷 INICIANDO LEITURA CONTÍNUA");
+  log("📷 INICIANDO LEITURA");
 
   Quagga.init({
     inputStream:{
       type:"LiveStream",
-      target:video
+      target:video,
+      constraints:{ facingMode:"environment" }
     },
     decoder:{
       readers:[
         "ean_reader",
         "ean_8_reader",
-        "code_128_reader",
-        "upc_reader"
+        "upc_reader",
+        "code_128_reader"
       ]
-    }
+    },
+    locate:true
   }, err=>{
     if(err){
       log("❌ ERRO QUAGGA: " + err.message);
+      lendo = false;
       return;
     }
     Quagga.start();
@@ -181,60 +172,56 @@ function iniciarLeitura(){
   });
 
   Quagga.onDetected(res=>{
-    const code = res.codeResult?.code;
-    if(!code) return;
-
     if(buscando) return;
-    if(code === ultimoCodigo) return;
 
-    ultimoCodigo = code;
-    buscarProduto(code);
+    const rawCode = res.codeResult?.code;
+    if(!rawCode) return;
+
+    const codigoFinal = normalizarCodigo(rawCode);
+    if(codigoFinal === ultimoCodigo) return;
+
+    ultimoCodigo = codigoFinal;
+    buscarProduto(codigoFinal);
   });
 }
 
-// ================= BUSCA PRODUTO
+// ================= BUSCA
 async function buscarProduto(barcode){
   buscando = true;
   log("🔍 BUSCANDO: " + barcode);
 
   try{
-    const url = `/api/buscar-barcode?barcode=${barcode}`;
-    log("URL: " + url);
-
-    const resp = await fetch(url,{
+    const resp = await fetch(`/api/buscar-barcode?barcode=${barcode}`,{
       headers:{ Authorization: token }
     });
 
     const raw = await resp.text();
     log("STATUS: " + resp.status);
-    log("RAW:");
     log(raw);
 
     const json = JSON.parse(raw);
-
     if(!json.items || json.items.length === 0){
       buscando = false;
-      return; // CONTINUA LENDO
+      return;
     }
 
-    // ACHOU
     beep.play();
     pararCamera();
 
     const p = json.items[0];
-
     resultado.innerHTML = `
       <div class="card">
         <h2>${p.descricao}</h2>
         <p><b>ID:</b> ${p.id}</p>
         <p><b>Unidade:</b> ${p.unidadeDeVenda}</p>
-        <p><b>Controla estoque:</b> ${p.controlaEstoque ? "Sim" : "Não"}</p>
         <p><b>Última alteração:</b> ${p.dataAlteracao}</p>
+        <p><b>Código consultado:</b> ${barcode}</p>
       </div>
     `;
 
   }catch(err){
-    log("❌ ERRO BUSCA: " + err.message);
+    log("❌ ERRO: " + err.message);
+  }finally{
     buscando = false;
   }
 }
@@ -243,14 +230,7 @@ async function buscarProduto(barcode){
 function pararCamera(){
   lendo = false;
   buscando = false;
-
   Quagga.stop();
-
-  if(stream){
-    stream.getTracks().forEach(t=>t.stop());
-    stream = null;
-  }
-
   log("🛑 CÂMERA PARADA");
 }
 </script>
