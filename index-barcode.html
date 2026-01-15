@@ -152,7 +152,7 @@ pre{
 </tr>
 </table>
 
-<h3>🧪 DEBUG (tudo que acontece)</h3>
+<h3>🧪 DEBUG</h3>
 <pre id="debug"></pre>
 
 </div>
@@ -171,46 +171,35 @@ let lendo=false, buscando=false, ultimoCodigo=null;
 let unidadeAuto="";
 let enviados=JSON.parse(localStorage.getItem("enviados"))||[];
 
-function log(txt){
-  console.log(txt);
-  debugEl.textContent += txt + "\n";
-  debugEl.scrollTop = debugEl.scrollHeight;
+function log(t){
+  console.log(t);
+  debugEl.textContent+=t+"\n";
+  debugEl.scrollTop=debugEl.scrollHeight;
 }
 
 function normalizarCodigo(c){
   c=String(c).trim();
-  return c.length>=13 ? c : "0"+c;
+  return c.length>=13?c:"0"+c;
 }
 
-/* ===== BUSCA MANUAL ===== */
 btnManual.onclick=()=>{
   const code=document.getElementById("barcode").value.trim();
   if(!code) return alert("Digite o código");
   buscarProduto(normalizarCodigo(code));
 };
 
-/* ===== CAMERA ===== */
 btnCamera.onclick=()=>{
   if(lendo) return;
   lendo=true;
   log("📷 Abrindo câmera");
 
   Quagga.init({
-    inputStream:{
-      type:"LiveStream",
-      target:video,
-      constraints:{facingMode:"environment"}
-    },
+    inputStream:{type:"LiveStream",target:video,constraints:{facingMode:"environment"}},
     decoder:{readers:["ean_reader","upc_reader","code_128_reader"]},
     locate:true
   },err=>{
-    if(err){
-      log("❌ ERRO CAMERA: "+err.message);
-      lendo=false;
-      return;
-    }
+    if(err){log("❌ ERRO CAMERA: "+err.message);lendo=false;return;}
     Quagga.start();
-    log("✅ Câmera ativa");
   });
 
   Quagga.offDetected();
@@ -218,67 +207,55 @@ btnCamera.onclick=()=>{
     if(buscando) return;
     const raw=res.codeResult?.code;
     if(!raw) return;
-
     const code=normalizarCodigo(raw);
     if(code===ultimoCodigo) return;
     ultimoCodigo=code;
-
     buscarProduto(code);
   });
 };
 
 async function buscarProduto(code){
-  buscando = true;
-  document.getElementById("barcode").value = code;
+  buscando=true;
+  document.getElementById("barcode").value=code;
+  msg.innerText="🔎 Buscando produto...";
+  log("🔍 "+code);
 
-  msg.innerText = "🔎 Buscando produto...";
-  log("🔍 Buscando: " + code);
+  try{
+    const r=await fetch(`/api/buscar-barcode?barcode=${code}`);
+    const j=await r.json();
+    log(JSON.stringify(j,null,2));
 
-  try {
-    const resp = await fetch(`/api/buscar-barcode?barcode=${code}`);
-    const json = await resp.json();
-
-    log("📦 API RESPONSE:");
-    log(JSON.stringify(json, null, 2));
-
-    // ✅ PRODUTO VEM AQUI
-    if (!json.produto) {
-      msg.innerText = "❌ Produto não encontrado";
-      log("⚠️ json.produto inexistente");
+    if(!j.produto){
+      msg.innerText="❌ Produto não encontrado";
       return;
     }
 
-    const p = json.produto;
+    document.getElementById("item").value=j.produto.descricao.trim();
+    unidadeAuto=j.produto.unidadeDeVenda||"";
+    msg.innerText="✅ Produto encontrado";
 
-    document.getElementById("item").value = p.descricao.trim();
-    unidadeAuto = p.unidadeDeVenda || "";
+    if(lendo){Quagga.stop();lendo=false;}
 
-    msg.innerText = "✅ Produto encontrado";
-    log("✅ Produto: " + p.descricao);
-    log("📏 Unidade: " + unidadeAuto);
-
-    if (lendo) {
-      Quagga.stop();
-      lendo = false;
-      log("🛑 Câmera parada");
-    }
-
-  } catch (e) {
-    msg.innerText = "❌ Erro ao buscar produto";
-    log("❌ ERRO: " + e.message);
-  } finally {
-    buscando = false;
+  }catch(e){
+    msg.innerText="❌ Erro";
+    log(e.message);
+  }finally{
+    buscando=false;
   }
 }
 
-
-/* ===== ENVIO ===== */
 btnEnviar.onclick=()=>{
-  const solicitante=solicitante.value;
-  const setor=setor.value;
-  const produto=item.value;
-  const quantidade=quantidade.value;
-  const observacoes=observacoes.value;
+  const solicitanteEl=document.getElementById("solicitante");
+  const setorEl=document.getElementById("setor");
+  const itemEl=document.getElementById("item");
+  const quantidadeEl=document.getElementById("quantidade");
+  const observacoesEl=document.getElementById("observacoes");
+
+  const solicitante=solicitanteEl.value;
+  const setor=setorEl.value;
+  const produto=itemEl.value;
+  const quantidade=quantidadeEl.value;
+  const observacoes=observacoesEl.value;
   const hora=new Date().toLocaleTimeString();
 
   if(!solicitante||!setor||!produto||!quantidade){
@@ -292,25 +269,13 @@ btnEnviar.onclick=()=>{
 
   fetch(URL_GAS,{
     method:"POST",
-    body:JSON.stringify({
-      acao:"cadastrar",
-      item:produto,
-      unidade:unidadeAuto,
-      quantidade,
-      setor,
-      solicitante,
-      observacoes
-    })
+    body:JSON.stringify({acao:"cadastrar",item:produto,unidade:unidadeAuto,quantidade,setor,solicitante,observacoes})
   }).then(()=>{
     enviados[enviados.length-1].status="Enviado";
     atualizarTabela();
     limparCampos();
     alert("✅ Enviado");
-  }).catch(e=>{
-    log("❌ ERRO GAS: "+e.message);
-  }).finally(()=>{
-    spinner.style.display="none";
-  });
+  }).finally(()=>spinner.style.display="none");
 };
 
 function limparCampos(){
