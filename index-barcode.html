@@ -37,7 +37,7 @@ textarea{resize:vertical}
 button{
   width:100%;
   padding:14px;
-  margin-top:10px;
+  margin-top:8px;
   border:none;
   border-radius:8px;
   font-weight:700;
@@ -45,6 +45,7 @@ button{
   font-size:16px;
 }
 .btn-blue{background:#2196F3;color:#fff}
+.btn-gray{background:#475569;color:#fff}
 .btn-red{background:#f44336;color:#fff}
 video{
   width:100%;
@@ -92,16 +93,21 @@ th,td{
 <label>Solicitante</label>
 <select id="solicitante">
   <option value="">Selecione</option>
-  <option>ADM</option><option>Ruan</option><option>Renata</option>
-  <option>Lu</option><option>Bruna</option><option>Renan</option>
-  <option>Dheure</option><option>Marcelo</option>
+  <option>ADM</option>
+  <option>Ruan</option>
+  <option>Renata</option>
+  <option>Dheure</option>
+  <option>Marcelo</option>
 </select>
 
 <label>Setor</label>
 <select id="setor">
   <option value="">Selecione</option>
-  <option>Cozinha</option><option>Limpeza</option><option>Bar</option>
-  <option>Sushi</option><option>Gerência</option>
+  <option>Cozinha</option>
+  <option>Limpeza</option>
+  <option>Bar</option>
+  <option>Sushi</option>
+  <option>Gerência</option>
 </select>
 
 <hr>
@@ -109,7 +115,8 @@ th,td{
 <label>Código de Barras</label>
 <input id="barcode" placeholder="Digite ou escaneie o código">
 
-<button class="btn-blue" onclick="abrirCamera()">📷 Ler código de barras</button>
+<button class="btn-gray" onclick="buscarManual()">🔍 Pesquisar manualmente</button>
+<button class="btn-blue" onclick="abrirCamera()">📷 Ler com a câmera</button>
 
 <video id="video" autoplay playsinline muted></video>
 
@@ -158,7 +165,17 @@ function normalizarCodigo(c){
   return "0"+c;
 }
 
-// ================= CAMERA
+// ===== BUSCA MANUAL
+function buscarManual(){
+  const code = barcode.value.trim();
+  if(!code){
+    alert("Digite o código de barras");
+    return;
+  }
+  buscarProduto(normalizarCodigo(code));
+}
+
+// ===== CAMERA
 function abrirCamera(){
   if(lendo) return;
   lendo=true;
@@ -189,95 +206,54 @@ function abrirCamera(){
   });
 }
 
-// ================= BUSCA PRODUTO
-async function buscarProduto(barcode){
+// ===== BUSCA PRODUTO
+async function buscarProduto(barcodeFinal){
   buscando=true;
-  document.getElementById("barcode").value=barcode;
+  barcode.value=barcodeFinal;
+  msg.innerText="🔎 Buscando produto...";
 
   try{
-    const r=await fetch(`/api/buscar-barcode?barcode=${barcode}`);
-    const j=await r.json();
+    const r = await fetch(`/api/buscar-barcode?barcode=${barcodeFinal}`);
+    const j = await r.json();
 
     if(!j.items || !j.items.length){
       alert("Produto não encontrado");
       return;
     }
 
-    document.getElementById("produto").value=j.items[0].descricao;
-    Quagga.stop();
-    lendo=false;
+    produto.value = j.items[0].descricao;
+    msg.innerText="✅ Produto encontrado";
+
+    if(lendo){
+      Quagga.stop();
+      lendo=false;
+    }
 
   }finally{
     buscando=false;
   }
 }
 
-// ================= ENVIO
+// ===== ENVIO
 function enviarItem(){
-  const solicitante=solicitante.value;
-  const setor=setor.value;
-  const produto=produto.value;
+  const solicitanteV=solicitante.value;
+  const setorV=setor.value;
+  const produtoV=produto.value;
   const qtd=quantidade.value;
   const obs=observacoes.value;
   const hora=new Date().toLocaleTimeString();
 
-  if(!solicitante||!setor||!produto||!qtd){
+  if(!solicitanteV||!setorV||!produtoV||!qtd){
     msg.innerText="⚠️ Preencha tudo";
     return;
   }
 
   spinner.style.display="block";
 
-  enviados.push({produto,qtd,setor,hora,status:"Processando"});
+  enviados.push({produto:produtoV,qtd,setor:setorV,hora,status:"Processando"});
   atualizarTabela();
 
   fetch(URL_GAS,{
     method:"POST",
     body:JSON.stringify({
-      acao:"cadastrar",
-      solicitante,
-      setor,
-      produto,
-      quantidade:qtd,
-      observacoes:obs
-    })
-  }).then(()=>{
-    enviados[enviados.length-1].status="Enviado";
-    atualizarTabela();
-    limparCampos();
-    alert("✅ Enviado com sucesso");
-  }).finally(()=>{
-    spinner.style.display="none";
-  });
-}
-
-// ================= UTIL
-function limparCampos(){
-  barcode.value="";
-  produto.value="";
-  quantidade.value="";
-  observacoes.value="";
-}
-function atualizarTabela(){
-  const t=document.getElementById("historico");
-  t.innerHTML=`<tr><th>Produto</th><th>Qtd</th><th>Setor</th><th>Hora</th><th>Status</th></tr>`;
-  enviados.forEach(i=>{
-    const r=t.insertRow();
-    r.insertCell(0).innerText=i.produto;
-    r.insertCell(1).innerText=i.qtd;
-    r.insertCell(2).innerText=i.setor;
-    r.insertCell(3).innerText=i.hora;
-    r.insertCell(4).innerText=i.status;
-  });
-  localStorage.setItem("enviados",JSON.stringify(enviados));
-}
-function limparTabela(){
-  enviados=[];
-  atualizarTabela();
-}
-
-atualizarTabela();
-</script>
-
-</body>
-</html>
+      acao:"ca
