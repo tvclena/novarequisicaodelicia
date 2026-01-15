@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Leitor de Código de Barras – Debug Total</title>
+
+<meta name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:20px;
+  font-family:Inter,Arial;
+  background:#f4f6f8;
+}
+h1{font-size:22px}
+
+button{
+  width:100%;
+  padding:16px;
+  font-size:18px;
+  font-weight:700;
+  border:none;
+  border-radius:16px;
+  background:#ff6a00;
+  color:#fff;
+  margin-top:10px;
+}
+button.secondary{background:#0f172a}
+
+input{
+  width:100%;
+  padding:16px;
+  font-size:18px;
+  border-radius:14px;
+  border:1px solid #cbd5e1;
+  margin-top:10px;
+}
+
+video{
+  width:100%;
+  margin-top:14px;
+  border-radius:18px;
+  background:#000;
+}
+
+.card{
+  background:#fff;
+  padding:18px;
+  border-radius:18px;
+  margin-top:14px;
+}
+
+pre{
+  background:#020617;
+  color:#e5e7eb;
+  padding:14px;
+  border-radius:14px;
+  margin-top:14px;
+  max-height:300px;
+  overflow:auto;
+  font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📦 Leitura de Código de Barras</h1>
+
+<button id="btnCamera">📷 Abrir câmera</button>
+
+<input id="manual" placeholder="Digite o código de barras manualmente">
+<button class="secondary" id="btnManual">🔍 Buscar manualmente</button>
+
+<video id="video" autoplay playsinline muted></video>
+
+<div id="resultado"></div>
+<pre id="debug"></pre>
+
+<audio id="beep">
+  <source src="data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQwAAAAA">
+</audio>
+
+<script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.min.js"></script>
+
+<script>
+let token = null;
+let stream = null;
+let lendo = false;
+let buscando = false;
+let ultimoCodigo = null;
+
+const debug = document.getElementById("debug");
+const video = document.getElementById("video");
+const resultado = document.getElementById("resultado");
+const beep = document.getElementById("beep");
+
+function log(txt){
+  debug.textContent += txt + "\n";
+  debug.scrollTop = debug.scrollHeight;
+}
+
+// ================= AUTH
+async function gerarToken(){
+  if(token) return token;
+
+  log("🔐 GERANDO TOKEN...");
+  const resp = await fetch("/api/auth");
+  const raw = await resp.text();
+
+  log("AUTH STATUS: " + resp.status);
+  log("AUTH RAW:");
+  log(raw);
+
+  const json = JSON.parse(raw);
+  token = json.accessToken;
+
+  log("✅ TOKEN:");
+  log(token);
+
+  return token;
+}
+
+// ================= CAMERA
+document.getElementById("btnCamera").onclick = async () => {
+  if(stream) return;
+
+  await gerarToken();
+
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:"environment"}
+  });
+
+  video.srcObject = stream;
+  await video.play();
+
+  iniciarLeitura();
+};
+
+// ================= MANUAL
+document.getElementById("btnManual").onclick = async () => {
+  const code = document.getElementById("manual").value.trim();
+  if(!code) return;
+
+  await gerarToken();
+  buscarProduto(code);
+};
+
+// ================= QUAGGA
+function iniciarLeitura(){
+  if(lendo) return;
+  lendo = true;
+
+  log("📷 INICIANDO LEITURA CONTÍNUA");
+
+  Quagga.init({
+    inputStream:{
+      type:"LiveStream",
+      target:video
+    },
+    decoder:{
+      readers:[
+        "ean_reader",
+        "ean_8_reader",
+        "code_128_reader",
+        "upc_reader"
+      ]
+    }
+  }, err=>{
+    if(err){
+      log("❌ ERRO QUAGGA: " + err.message);
+      return;
+    }
+    Quagga.start();
+    log("✅ QUAGGA ATIVO");
+  });
+
+  Quagga.onDetected(res=>{
+    const code = res.codeResult?.code;
+    if(!code) return;
+
+    if(buscando) return;
+    if(code === ultimoCodigo) return;
+
+    ultimoCodigo = code;
+    buscarProduto(code);
+  });
+}
+
+// ================= BUSCA PRODUTO
+async function buscarProduto(barcode){
+  buscando = true;
+  log("🔍 BUSCANDO: " + barcode);
+
+  try{
+    const url = `/api/buscar-barcode?barcode=${barcode}`;
+    log("URL: " + url);
+
+    const resp = await fetch(url,{
+      headers:{ Authorization: token }
+    });
+
+    const raw = await resp.text();
+    log("STATUS: " + resp.status);
+    log("RAW:");
+    log(raw);
+
+    const json = JSON.parse(raw);
+
+    if(!json.items || json.items.length === 0){
+      buscando = false;
+      return; // CONTINUA LENDO
+    }
+
+    // ACHOU
+    beep.play();
+    pararCamera();
+
+    const p = json.items[0];
+
+    resultado.innerHTML = `
+      <div class="card">
+        <h2>${p.descricao}</h2>
+        <p><b>ID:</b> ${p.id}</p>
+        <p><b>Unidade:</b> ${p.unidadeDeVenda}</p>
+        <p><b>Controla estoque:</b> ${p.controlaEstoque ? "Sim" : "Não"}</p>
+        <p><b>Última alteração:</b> ${p.dataAlteracao}</p>
+      </div>
+    `;
+
+  }catch(err){
+    log("❌ ERRO BUSCA: " + err.message);
+    buscando = false;
+  }
+}
+
+// ================= PARAR
+function pararCamera(){
+  lendo = false;
+  buscando = false;
+
+  Quagga.stop();
+
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+    stream = null;
+  }
+
+  log("🛑 CÂMERA PARADA");
+}
+</script>
+
+</body>
+</html>
