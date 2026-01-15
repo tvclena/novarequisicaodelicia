@@ -20,7 +20,6 @@ body{
   max-width:540px;
   width:100%;
   padding:22px;
-  position:relative;
 }
 h2{text-align:center;margin-bottom:20px}
 label{display:block;margin:12px 0 6px;font-weight:bold}
@@ -46,12 +45,31 @@ button{
 .btn-blue{background:#2196F3;color:#fff}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-red{background:#f44336;color:#fff}
-video{
+
+#camera{
   width:100%;
-  margin-top:10px;
-  border-radius:10px;
+  height:260px;
   background:#000;
+  border-radius:10px;
+  margin-top:10px;
+  overflow:hidden;
 }
+#camera video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.badge{
+  display:inline-block;
+  padding:6px 12px;
+  background:#e0f2fe;
+  color:#0369a1;
+  border-radius:999px;
+  font-weight:bold;
+  margin-top:6px;
+}
+
 table{
   width:100%;
   border-collapse:collapse;
@@ -63,24 +81,7 @@ th,td{
   padding:6px;
   text-align:center;
 }
-#msg{text-align:center;margin-top:10px;font-weight:bold}
-#spinner{
-  display:none;
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  border:8px solid #eee;
-  border-top:8px solid #2196F3;
-  border-radius:50%;
-  width:60px;
-  height:60px;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{
-  from{transform:translate(-50%,-50%) rotate(0)}
-  to{transform:translate(-50%,-50%) rotate(360deg)}
-}
+
 pre{
   background:#020617;
   color:#e5e7eb;
@@ -89,15 +90,6 @@ pre{
   font-size:12px;
   max-height:260px;
   overflow:auto;
-}
-.badge{
-  display:inline-block;
-  padding:6px 12px;
-  background:#e0f2fe;
-  color:#0369a1;
-  border-radius:999px;
-  font-weight:bold;
-  margin-top:6px;
 }
 </style>
 </head>
@@ -131,7 +123,7 @@ pre{
 <button class="btn-dark" id="btnManual">🔍 Pesquisar manualmente</button>
 <button class="btn-blue" id="btnCamera">📷 Ler com a câmera</button>
 
-<video id="video" autoplay muted playsinline></video>
+<div id="camera"></div>
 
 <label>Produto</label>
 <input id="item" readonly placeholder="Produto será preenchido automaticamente">
@@ -144,12 +136,8 @@ pre{
 <label>Observações</label>
 <textarea id="observacoes"></textarea>
 
-<div id="spinner"></div>
-
 <button id="btnEnviar" class="btn-blue">ENVIAR ITEM</button>
 <button class="btn-red" onclick="limparTabela()">LIMPAR HISTÓRICO</button>
-
-<p id="msg"></p>
 
 <h3>Histórico</h3>
 <table id="historico">
@@ -171,13 +159,11 @@ pre{
 <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.min.js"></script>
 
 <script>
-const URL_GAS = "https://script.google.com/macros/s/AKfycbyXFEAq56G7oQdeCzGw_SdOnQ7XkRPMzBoS1V09Pkk_wI916FGO9nn4e9FfeNmv8KV9KA/exec";
+const URL_GAS="https://script.google.com/macros/s/AKfycbyXFEAq56G7oQdeCzGw_SdOnQ7XkRPMzBoS1V09Pkk_wI916FGO9nn4e9FfeNmv8KV9KA/exec";
 
-const debugEl = document.getElementById("debug");
-const msg = document.getElementById("msg");
-const spinner = document.getElementById("spinner");
-const video = document.getElementById("video");
-const unidadeBox = document.getElementById("unidadeBox");
+const debugEl=document.getElementById("debug");
+const unidadeBox=document.getElementById("unidadeBox");
+const cameraEl=document.getElementById("camera");
 
 let lendo=false;
 let buscando=false;
@@ -187,39 +173,34 @@ let enviados=JSON.parse(localStorage.getItem("enviados"))||[];
 
 function log(t){
   console.log(t);
-  debugEl.textContent += t + "\n";
-  debugEl.scrollTop = debugEl.scrollHeight;
+  debugEl.textContent+=t+"\n";
+  debugEl.scrollTop=debugEl.scrollHeight;
 }
 
-/* 🔢 NORMALIZA CÓDIGO (SEMPRE 0 À ESQUERDA) */
+/* 🔢 NORMALIZA (SEMPRE 0 À ESQUERDA) */
 function normalizarCodigo(c){
-  c = String(c).replace(/\D/g,"").trim();
-  if(c.length >= 13) return c;
-  return "0" + c;
+  c=String(c).replace(/\D/g,"");
+  return c.length>=13?c:"0"+c;
 }
 
 /* 🔍 BUSCA MANUAL */
-btnManual.onclick = () => {
-  const code = document.getElementById("barcode").value.trim();
-  if(!code) return alert("Digite o código");
-  buscarProduto(normalizarCodigo(code));
+btnManual.onclick=()=>{
+  const c=barcode.value.trim();
+  if(!c) return;
+  buscarProduto(normalizarCodigo(c));
 };
 
-/* 📷 CAMERA ANDROID + IPHONE */
-btnCamera.onclick = () => {
+/* 📷 CAMERA – iPhone + Android */
+btnCamera.onclick=()=>{
   if(lendo) return;
-  lendo = true;
+  lendo=true;
   log("📷 Abrindo câmera");
 
   Quagga.init({
     inputStream:{
       type:"LiveStream",
-      target:video,
-      constraints:{
-        facingMode:"environment",
-        width:{min:640},
-        height:{min:480}
-      }
+      target:cameraEl,
+      constraints:{facingMode:"environment"}
     },
     decoder:{
       readers:[
@@ -230,7 +211,7 @@ btnCamera.onclick = () => {
       ]
     },
     locate:true
-  }, err=>{
+  },err=>{
     if(err){
       log("❌ ERRO CAMERA: "+err.message);
       lendo=false;
@@ -243,88 +224,64 @@ btnCamera.onclick = () => {
   Quagga.offDetected();
   Quagga.onDetected(res=>{
     if(buscando) return;
-
-    const raw = res.codeResult?.code;
+    const raw=res.codeResult?.code;
     if(!raw) return;
 
-    const code = normalizarCodigo(raw);
-    if(code === ultimoCodigo) return;
+    const code=normalizarCodigo(raw);
+    if(code===ultimoCodigo) return;
+    ultimoCodigo=code;
 
-    ultimoCodigo = code;
     buscarProduto(code);
   });
 };
 
 /* 🔎 BUSCAR PRODUTO */
 async function buscarProduto(code){
-  buscando = true;
-  document.getElementById("barcode").value = code;
-
-  msg.innerText = "🔎 Buscando produto...";
-  log("🔍 Buscando: " + code);
+  buscando=true;
+  barcode.value=code;
+  log("🔍 Buscando: "+code);
 
   try{
-    const resp = await fetch(`/api/buscar-barcode?barcode=${code}`);
-    const json = await resp.json();
+    const r=await fetch(`/api/buscar-barcode?barcode=${code}`);
+    const j=await r.json();
 
     log("📦 API RESPONSE:");
-    log(JSON.stringify(json,null,2));
+    log(JSON.stringify(j,null,2));
 
-    if(!json.produto){
-      msg.innerText = "❌ Produto não encontrado";
+    if(!j.produto){
+      log("❌ Produto não encontrado");
       return;
     }
 
-    const p = json.produto;
+    item.value=j.produto.descricao.trim();
+    unidadeAuto=j.produto.unidadeDeVenda||"";
 
-    document.getElementById("item").value = p.descricao.trim();
-    unidadeAuto = p.unidadeDeVenda || "";
-
-    unidadeBox.innerHTML = unidadeAuto
-      ? `<div class="badge">📏 Unidade: ${unidadeAuto}</div>`
-      : "";
-
-    msg.innerText = "✅ Produto encontrado";
-    log("✅ Produto: " + p.descricao);
-    log("📏 Unidade: " + unidadeAuto);
+    unidadeBox.innerHTML=`<div class="badge">📏 Unidade: ${unidadeAuto}</div>`;
 
     if(lendo){
       Quagga.stop();
-      lendo = false;
+      lendo=false;
       log("🛑 Câmera parada");
     }
 
   }catch(e){
-    msg.innerText = "❌ Erro ao buscar produto";
     log("❌ ERRO: "+e.message);
   }finally{
-    buscando = false;
+    buscando=false;
   }
 }
 
 /* 📤 ENVIO */
-btnEnviar.onclick = () => {
-  const solicitante = document.getElementById("solicitante").value;
-  const setor = document.getElementById("setor").value;
-  const produto = document.getElementById("item").value;
-  const quantidade = document.getElementById("quantidade").value;
-  const observacoes = document.getElementById("observacoes").value;
-  const hora = new Date().toLocaleTimeString();
-
-  if(!solicitante || !setor || !produto || !quantidade){
-    msg.innerText="⚠️ Preencha tudo";
-    return;
-  }
-
-  spinner.style.display="block";
+btnEnviar.onclick=()=>{
+  if(!item.value||!quantidade.value) return;
 
   enviados.push({
-    item:produto,
+    item:item.value,
     unidade:unidadeAuto,
-    quantidade,
-    setor,
-    hora,
-    status:"Processando"
+    quantidade:quantidade.value,
+    setor:setor.value,
+    hora:new Date().toLocaleTimeString(),
+    status:"Enviado"
   });
 
   atualizarTabela();
@@ -333,50 +290,24 @@ btnEnviar.onclick = () => {
     method:"POST",
     body:JSON.stringify({
       acao:"cadastrar",
-      item:produto,
+      item:item.value,
       unidade:unidadeAuto,
-      quantidade,
-      setor,
-      solicitante,
-      observacoes
+      quantidade:quantidade.value,
+      setor:setor.value,
+      solicitante:solicitante.value,
+      observacoes:observacoes.value
     })
-  })
-  .then(()=>{
-    enviados[enviados.length-1].status="Enviado";
-    atualizarTabela();
-    limparCampos();
-    alert("✅ Enviado com sucesso");
-  })
-  .catch(e=>{
-    log("❌ ERRO GAS: "+e.message);
-  })
-  .finally(()=>{
-    spinner.style.display="none";
   });
 };
 
-function limparCampos(){
-  barcode.value="";
-  item.value="";
-  quantidade.value="";
-  observacoes.value="";
-  unidadeBox.innerHTML="";
-}
-
 function atualizarTabela(){
-  historico.innerHTML = `
-  <tr>
+  historico.innerHTML=`<tr>
     <th>Produto</th><th>Unidade</th><th>Qtd</th>
     <th>Setor</th><th>Hora</th><th>Status</th>
   </tr>`;
   enviados.forEach(i=>{
-    const r = historico.insertRow();
-    r.insertCell(0).innerText=i.item;
-    r.insertCell(1).innerText=i.unidade;
-    r.insertCell(2).innerText=i.quantidade;
-    r.insertCell(3).innerText=i.setor;
-    r.insertCell(4).innerText=i.hora;
-    r.insertCell(5).innerText=i.status;
+    const r=historico.insertRow();
+    Object.values(i).forEach(v=>r.insertCell().innerText=v);
   });
   localStorage.setItem("enviados",JSON.stringify(enviados));
 }
