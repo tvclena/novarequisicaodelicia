@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
+*{box-sizing:border-box}
 body{
   font-family:Inter, Arial;
   background:#f5f5f5;
@@ -17,8 +18,8 @@ body{
 }
 .container{
   background:#fff;
-  border-radius:14px;
-  box-shadow:0 0 15px rgba(0,0,0,.1);
+  border-radius:16px;
+  box-shadow:0 0 15px rgba(0,0,0,.12);
   max-width:520px;
   width:100%;
   padding:25px;
@@ -29,7 +30,7 @@ label{display:block;margin:12px 0 6px;font-weight:600}
 input,select,textarea{
   width:100%;
   padding:12px;
-  border-radius:8px;
+  border-radius:10px;
   border:1px solid #ccc;
   font-size:15px;
 }
@@ -39,7 +40,7 @@ button{
   padding:14px;
   margin-top:8px;
   border:none;
-  border-radius:8px;
+  border-radius:10px;
   font-weight:700;
   cursor:pointer;
   font-size:16px;
@@ -50,7 +51,7 @@ button{
 video{
   width:100%;
   margin-top:10px;
-  border-radius:10px;
+  border-radius:12px;
   background:#000;
 }
 table{
@@ -77,6 +78,7 @@ th,td{
   width:60px;
   height:60px;
   animation:spin 1s linear infinite;
+  z-index:10;
 }
 @keyframes spin{
   from{transform:translate(-50%,-50%) rotate(0)}
@@ -121,7 +123,7 @@ th,td{
 <video id="video" autoplay playsinline muted></video>
 
 <label>Produto</label>
-<input id="produto" readonly placeholder="Produto será buscado automaticamente">
+<input id="produto" readonly placeholder="Produto será preenchido automaticamente">
 
 <label>Quantidade</label>
 <input type="number" id="quantidade" min="1">
@@ -159,13 +161,13 @@ let enviados = JSON.parse(localStorage.getItem("enviados")) || [];
 
 const video = document.getElementById("video");
 
-function normalizarCodigo(c){
-  c=String(c).trim();
-  if(c.length>=13) return c;
-  return "0"+c;
+function normalizarCodigo(code){
+  const c = String(code).trim();
+  if(c.length >= 13) return c;     // EAN-13
+  return "0" + c;                 // UPC-A → EAN
 }
 
-// ===== BUSCA MANUAL
+// ================= BUSCA MANUAL
 function buscarManual(){
   const code = barcode.value.trim();
   if(!code){
@@ -175,85 +177,153 @@ function buscarManual(){
   buscarProduto(normalizarCodigo(code));
 }
 
-// ===== CAMERA
+// ================= CAMERA
 function abrirCamera(){
   if(lendo) return;
-  lendo=true;
+  lendo = true;
+  msg.innerText = "📷 Lendo código de barras...";
 
   Quagga.init({
     inputStream:{
       type:"LiveStream",
       target:video,
-      constraints:{facingMode:"environment"}
+      constraints:{ facingMode:"environment" }
     },
-    decoder:{readers:["ean_reader","upc_reader","code_128_reader"]},
+    decoder:{
+      readers:[
+        "ean_reader",
+        "upc_reader",
+        "code_128_reader"
+      ]
+    },
     locate:true
-  },err=>{
-    if(err){alert(err.message);return}
+  }, err=>{
+    if(err){
+      alert("Erro ao abrir câmera");
+      lendo=false;
+      return;
+    }
     Quagga.start();
   });
 
   Quagga.onDetected(res=>{
     if(buscando) return;
-    const code=res.codeResult?.code;
-    if(!code) return;
 
-    const final=normalizarCodigo(code);
-    if(final===ultimoCodigo) return;
+    const raw = res.codeResult?.code;
+    if(!raw) return;
 
-    ultimoCodigo=final;
-    buscarProduto(final);
+    const codigoFinal = normalizarCodigo(raw);
+    if(codigoFinal === ultimoCodigo) return;
+
+    ultimoCodigo = codigoFinal;
+    buscarProduto(codigoFinal);
   });
 }
 
-// ===== BUSCA PRODUTO
+// ================= BUSCA PRODUTO
 async function buscarProduto(barcodeFinal){
-  buscando=true;
-  barcode.value=barcodeFinal;
-  msg.innerText="🔎 Buscando produto...";
+  buscando = true;
+  barcode.value = barcodeFinal;
+  msg.innerText = "🔎 Buscando produto...";
 
   try{
-    const r = await fetch(`/api/buscar-barcode?barcode=${barcodeFinal}`);
-    const j = await r.json();
+    const resp = await fetch(`/api/buscar-barcode?barcode=${barcodeFinal}`);
+    const json = await resp.json();
 
-    if(!j.items || !j.items.length){
+    if(!json.items || !json.items.length){
       alert("Produto não encontrado");
       return;
     }
 
-    produto.value = j.items[0].descricao;
-    msg.innerText="✅ Produto encontrado";
+    produto.value = json.items[0].descricao;
+    msg.innerText = "✅ Produto encontrado";
 
     if(lendo){
       Quagga.stop();
-      lendo=false;
+      lendo = false;
     }
 
+  }catch{
+    alert("Erro ao consultar produto");
   }finally{
-    buscando=false;
+    buscando = false;
   }
 }
 
-// ===== ENVIO
+// ================= ENVIO
 function enviarItem(){
-  const solicitanteV=solicitante.value;
-  const setorV=setor.value;
-  const produtoV=produto.value;
-  const qtd=quantidade.value;
-  const obs=observacoes.value;
-  const hora=new Date().toLocaleTimeString();
+  const solicitanteV = solicitante.value;
+  const setorV = setor.value;
+  const produtoV = produto.value;
+  const qtd = quantidade.value;
+  const obs = observacoes.value;
+  const hora = new Date().toLocaleTimeString();
 
-  if(!solicitanteV||!setorV||!produtoV||!qtd){
-    msg.innerText="⚠️ Preencha tudo";
+  if(!solicitanteV || !setorV || !produtoV || !qtd){
+    msg.innerText = "⚠️ Preencha todos os campos";
     return;
   }
 
-  spinner.style.display="block";
+  spinner.style.display = "block";
 
-  enviados.push({produto:produtoV,qtd,setor:setorV,hora,status:"Processando"});
+  enviados.push({produto:produtoV, qtd, setor:setorV, hora, status:"Processando"});
   atualizarTabela();
 
   fetch(URL_GAS,{
     method:"POST",
     body:JSON.stringify({
-      acao:"ca
+      acao:"cadastrar",
+      solicitante:solicitanteV,
+      setor:setorV,
+      produto:produtoV,
+      quantidade:qtd,
+      observacoes:obs
+    })
+  }).then(()=>{
+    enviados[enviados.length-1].status="Enviado";
+    atualizarTabela();
+    limparCampos();
+    alert("✅ Item enviado com sucesso");
+  }).finally(()=>{
+    spinner.style.display="none";
+  });
+}
+
+// ================= UTIL
+function limparCampos(){
+  barcode.value="";
+  produto.value="";
+  quantidade.value="";
+  observacoes.value="";
+  msg.innerText="";
+}
+function atualizarTabela(){
+  const t = document.getElementById("historico");
+  t.innerHTML = `
+    <tr>
+      <th>Produto</th>
+      <th>Qtd</th>
+      <th>Setor</th>
+      <th>Hora</th>
+      <th>Status</th>
+    </tr>`;
+  enviados.forEach(i=>{
+    const r = t.insertRow();
+    r.insertCell(0).innerText=i.produto;
+    r.insertCell(1).innerText=i.qtd;
+    r.insertCell(2).innerText=i.setor;
+    r.insertCell(3).innerText=i.hora;
+    r.insertCell(4).innerText=i.status;
+  });
+  localStorage.setItem("enviados", JSON.stringify(enviados));
+}
+function limparTabela(){
+  enviados=[];
+  atualizarTabela();
+}
+
+atualizarTabela();
+</script>
+
+</body>
+</html>
