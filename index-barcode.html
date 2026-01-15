@@ -2,186 +2,134 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Requisição de Compras - DELÍCIA GOURMET</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leitor de Código de Barras – Envio para Planilha</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
 *{box-sizing:border-box}
 body{
-  font-family:Inter, Arial;
-  background:#f5f5f5;
-  display:flex;
-  justify-content:center;
-  padding:30px;
+  margin:0;
+  padding:20px;
+  font-family:Inter,Arial;
+  background:#f4f6f8;
 }
-.container{
-  background:#fff;
-  border-radius:16px;
-  box-shadow:0 0 15px rgba(0,0,0,.12);
-  max-width:520px;
-  width:100%;
-  padding:25px;
-  position:relative;
-}
-h2{text-align:center;margin-bottom:20px}
-label{display:block;margin:12px 0 6px;font-weight:600}
-input,select,textarea{
-  width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  font-size:15px;
-}
-textarea{resize:vertical}
+h1{font-size:22px;text-align:center}
+
 button{
   width:100%;
-  padding:14px;
-  margin-top:8px;
-  border:none;
-  border-radius:10px;
+  padding:16px;
+  font-size:18px;
   font-weight:700;
+  border:none;
+  border-radius:16px;
+  background:#ff6a00;
+  color:#fff;
+  margin-top:10px;
   cursor:pointer;
-  font-size:16px;
 }
-.btn-blue{background:#2196F3;color:#fff}
-.btn-gray{background:#475569;color:#fff}
-.btn-red{background:#f44336;color:#fff}
+button.secondary{background:#0f172a}
+button.green{background:#16a34a}
+
+input,textarea{
+  width:100%;
+  padding:16px;
+  font-size:18px;
+  border-radius:14px;
+  border:1px solid #cbd5e1;
+  margin-top:10px;
+}
+
 video{
   width:100%;
-  margin-top:10px;
-  border-radius:12px;
+  margin-top:14px;
+  border-radius:18px;
   background:#000;
 }
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:20px;
+
+.card{
+  background:#fff;
+  padding:18px;
+  border-radius:18px;
+  margin-top:14px;
+}
+
+pre{
+  background:#020617;
+  color:#e5e7eb;
+  padding:14px;
+  border-radius:14px;
+  margin-top:14px;
+  max-height:280px;
+  overflow:auto;
   font-size:13px;
-}
-th,td{
-  border:1px solid #ddd;
-  padding:6px;
-  text-align:center;
-}
-#msg{text-align:center;margin-top:8px;font-weight:600}
-#spinner{
-  display:none;
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  border:8px solid #eee;
-  border-top:8px solid #2196F3;
-  border-radius:50%;
-  width:60px;
-  height:60px;
-  animation:spin 1s linear infinite;
-  z-index:10;
-}
-@keyframes spin{
-  from{transform:translate(-50%,-50%) rotate(0)}
-  to{transform:translate(-50%,-50%) rotate(360deg)}
 }
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<h2>📋 Requisição de Compras<br>DELÍCIA GOURMET</h2>
+<h1>📦 Leitura de Código de Barras</h1>
 
-<label>Solicitante</label>
-<select id="solicitante">
-  <option value="">Selecione</option>
-  <option>ADM</option>
-  <option>Ruan</option>
-  <option>Renata</option>
-  <option>Dheure</option>
-  <option>Marcelo</option>
-</select>
+<button id="btnCamera">📷 Abrir câmera</button>
 
-<label>Setor</label>
-<select id="setor">
-  <option value="">Selecione</option>
-  <option>Cozinha</option>
-  <option>Limpeza</option>
-  <option>Bar</option>
-  <option>Sushi</option>
-  <option>Gerência</option>
-</select>
-
-<hr>
-
-<label>Código de Barras</label>
-<input id="barcode" placeholder="Digite ou escaneie o código">
-
-<button class="btn-gray" onclick="buscarManual()">🔍 Pesquisar manualmente</button>
-<button class="btn-blue" onclick="abrirCamera()">📷 Ler com a câmera</button>
+<input id="manual" placeholder="Digite o código de barras">
+<button class="secondary" id="btnManual">🔍 Buscar manualmente</button>
 
 <video id="video" autoplay playsinline muted></video>
 
-<label>Produto</label>
-<input id="produto" readonly placeholder="Produto será preenchido automaticamente">
+<div id="resultado"></div>
 
 <label>Quantidade</label>
-<input type="number" id="quantidade" min="1">
+<input type="number" id="quantidade" min="1" placeholder="Quantidade">
 
 <label>Observações</label>
-<textarea id="observacoes"></textarea>
+<textarea id="observacoes" placeholder="Opcional"></textarea>
 
-<div id="spinner"></div>
+<button class="green" id="btnEnviar">📤 Enviar para planilha</button>
 
-<button class="btn-blue" onclick="enviarItem()">ENVIAR ITEM</button>
-<button class="btn-red" onclick="limparTabela()">LIMPAR HISTÓRICO</button>
-
-<p id="msg"></p>
-
-<h3>Itens enviados nesta sessão</h3>
-<table id="historico">
-  <tr>
-    <th>Produto</th>
-    <th>Qtd</th>
-    <th>Setor</th>
-    <th>Hora</th>
-    <th>Status</th>
-  </tr>
-</table>
-
-</div>
+<pre id="debug"></pre>
 
 <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.min.js"></script>
 
 <script>
+/* ================= CONFIG ================= */
 const URL_GAS = "https://script.google.com/macros/s/AKfycbyXFEAq56G7oQdeCzGw_SdOnQ7XkRPMzBoS1V09Pkk_wI916FGO9nn4e9FfeNmv8KV9KA/exec";
 
-let lendo=false, buscando=false, ultimoCodigo=null;
-let enviados = JSON.parse(localStorage.getItem("enviados")) || [];
+/* ================= STATE ================= */
+let lendo = false;
+let buscando = false;
+let ultimoCodigo = null;
+let produtoAtual = null;
 
+/* ================= ELEMENTS ================= */
+const debug = document.getElementById("debug");
 const video = document.getElementById("video");
+const resultado = document.getElementById("resultado");
+
+/* ================= UTILS ================= */
+function log(txt){
+  debug.textContent += txt + "\n";
+  debug.scrollTop = debug.scrollHeight;
+}
 
 function normalizarCodigo(code){
   const c = String(code).trim();
-  if(c.length >= 13) return c;     // EAN-13
-  return "0" + c;                 // UPC-A → EAN
+  if(c.length >= 13) return c;   // EAN-13
+  return "0" + c;               // UPC → EAN
 }
 
-// ================= BUSCA MANUAL
-function buscarManual(){
-  const code = barcode.value.trim();
-  if(!code){
-    alert("Digite o código de barras");
-    return;
-  }
-  buscarProduto(normalizarCodigo(code));
-}
-
-// ================= CAMERA
-function abrirCamera(){
+/* ================= CAMERA ================= */
+document.getElementById("btnCamera").onclick = () => {
   if(lendo) return;
+  iniciarLeitura();
+};
+
+function iniciarLeitura(){
   lendo = true;
-  msg.innerText = "📷 Lendo código de barras...";
+  log("📷 Iniciando leitura com câmera");
 
   Quagga.init({
     inputStream:{
@@ -199,11 +147,12 @@ function abrirCamera(){
     locate:true
   }, err=>{
     if(err){
-      alert("Erro ao abrir câmera");
-      lendo=false;
+      log("❌ ERRO QUAGGA: " + err.message);
+      lendo = false;
       return;
     }
     Quagga.start();
+    log("✅ Câmera ativa");
   });
 
   Quagga.onDetected(res=>{
@@ -212,117 +161,103 @@ function abrirCamera(){
     const raw = res.codeResult?.code;
     if(!raw) return;
 
-    const codigoFinal = normalizarCodigo(raw);
-    if(codigoFinal === ultimoCodigo) return;
+    const codigo = normalizarCodigo(raw);
+    if(codigo === ultimoCodigo) return;
 
-    ultimoCodigo = codigoFinal;
-    buscarProduto(codigoFinal);
+    ultimoCodigo = codigo;
+    buscarProduto(codigo);
   });
 }
 
-// ================= BUSCA PRODUTO
-async function buscarProduto(barcodeFinal){
+/* ================= MANUAL ================= */
+document.getElementById("btnManual").onclick = () => {
+  const raw = document.getElementById("manual").value.trim();
+  if(!raw) return;
+  buscarProduto(normalizarCodigo(raw));
+};
+
+/* ================= BUSCAR PRODUTO ================= */
+async function buscarProduto(barcode){
   buscando = true;
-  barcode.value = barcodeFinal;
-  msg.innerText = "🔎 Buscando produto...";
+  log("🔍 Buscando produto: " + barcode);
 
   try{
-    const resp = await fetch(`/api/buscar-barcode?barcode=${barcodeFinal}`);
+    const resp = await fetch(`/api/buscar-barcode?barcode=${barcode}`);
     const json = await resp.json();
 
     if(!json.items || !json.items.length){
-      alert("Produto não encontrado");
+      log("⚠️ Produto não encontrado");
+      buscando = false;
       return;
     }
 
-    produto.value = json.items[0].descricao;
-    msg.innerText = "✅ Produto encontrado";
+    produtoAtual = {
+      codigo: barcode,
+      descricao: json.items[0].descricao,
+      id: json.items[0].id
+    };
+
+    resultado.innerHTML = `
+      <div class="card">
+        <h2>${produtoAtual.descricao}</h2>
+        <p><b>Código:</b> ${produtoAtual.codigo}</p>
+        <p><b>ID:</b> ${produtoAtual.id}</p>
+      </div>
+    `;
 
     if(lendo){
       Quagga.stop();
       lendo = false;
+      log("🛑 Câmera parada");
     }
 
-  }catch{
-    alert("Erro ao consultar produto");
+  }catch(err){
+    log("❌ ERRO BUSCA: " + err.message);
   }finally{
     buscando = false;
   }
 }
 
-// ================= ENVIO
-function enviarItem(){
-  const solicitanteV = solicitante.value;
-  const setorV = setor.value;
-  const produtoV = produto.value;
-  const qtd = quantidade.value;
-  const obs = observacoes.value;
-  const hora = new Date().toLocaleTimeString();
-
-  if(!solicitanteV || !setorV || !produtoV || !qtd){
-    msg.innerText = "⚠️ Preencha todos os campos";
+/* ================= ENVIAR PARA PLANILHA ================= */
+document.getElementById("btnEnviar").onclick = async () => {
+  if(!produtoAtual){
+    alert("Nenhum produto selecionado");
     return;
   }
 
-  spinner.style.display = "block";
+  const quantidade = document.getElementById("quantidade").value;
+  const observacoes = document.getElementById("observacoes").value;
 
-  enviados.push({produto:produtoV, qtd, setor:setorV, hora, status:"Processando"});
-  atualizarTabela();
+  if(!quantidade){
+    alert("Informe a quantidade");
+    return;
+  }
 
-  fetch(URL_GAS,{
-    method:"POST",
-    body:JSON.stringify({
-      acao:"cadastrar",
-      solicitante:solicitanteV,
-      setor:setorV,
-      produto:produtoV,
-      quantidade:qtd,
-      observacoes:obs
-    })
-  }).then(()=>{
-    enviados[enviados.length-1].status="Enviado";
-    atualizarTabela();
-    limparCampos();
-    alert("✅ Item enviado com sucesso");
-  }).finally(()=>{
-    spinner.style.display="none";
-  });
-}
+  log("📤 Enviando para planilha...");
 
-// ================= UTIL
-function limparCampos(){
-  barcode.value="";
-  produto.value="";
-  quantidade.value="";
-  observacoes.value="";
-  msg.innerText="";
-}
-function atualizarTabela(){
-  const t = document.getElementById("historico");
-  t.innerHTML = `
-    <tr>
-      <th>Produto</th>
-      <th>Qtd</th>
-      <th>Setor</th>
-      <th>Hora</th>
-      <th>Status</th>
-    </tr>`;
-  enviados.forEach(i=>{
-    const r = t.insertRow();
-    r.insertCell(0).innerText=i.produto;
-    r.insertCell(1).innerText=i.qtd;
-    r.insertCell(2).innerText=i.setor;
-    r.insertCell(3).innerText=i.hora;
-    r.insertCell(4).innerText=i.status;
-  });
-  localStorage.setItem("enviados", JSON.stringify(enviados));
-}
-function limparTabela(){
-  enviados=[];
-  atualizarTabela();
-}
+  try{
+    await fetch(URL_GAS,{
+      method:"POST",
+      body:JSON.stringify({
+        acao:"cadastrar",
+        codigo_barras: produtoAtual.codigo,
+        produto: produtoAtual.descricao,
+        quantidade: quantidade,
+        observacoes: observacoes
+      })
+    });
 
-atualizarTabela();
+    alert("✅ Enviado com sucesso!");
+    resultado.innerHTML = "";
+    produtoAtual = null;
+    document.getElementById("quantidade").value = "";
+    document.getElementById("observacoes").value = "";
+
+  }catch(err){
+    alert("❌ Erro ao enviar");
+    log(err.message);
+  }
+};
 </script>
 
 </body>
