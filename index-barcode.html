@@ -145,32 +145,43 @@ btnManual.onclick = () => {
   buscarProduto(normalizarCodigo(code));
 };
 
-/* ===== BUSCA PRODUTO ===== */
-async function buscarProduto(barcode){
-  buscando=true;
-  barcode.value=barcode;
-  msg.innerText="🔎 Buscando produto...";
+async function buscarProduto(codigo) {
+  buscando = true;
 
-  try{
-    const r=await fetch(`/api/buscar-barcode?barcode=${barcode}`);
-    const j=await r.json();
+  const inputBarcode = document.getElementById("barcode");
+  inputBarcode.value = codigo;
 
-    if(!j.items || !j.items.length){
+  msg.innerText = "🔎 Buscando produto...";
+
+  try {
+    const resp = await fetch(`/api/buscar-barcode?barcode=${codigo}`);
+    const json = await resp.json();
+
+    if (!json.items || !json.items.length) {
       alert("Produto não encontrado");
       return;
     }
 
-    item.value=j.items[0].descricao;
-    unidadeAuto=j.items[0].unidadeDeVenda || "";
+    const produto = json.items[0];
 
-    if(lendo){ Quagga.stop(); lendo=false; }
+    document.getElementById("item").value = produto.descricao;
+    unidadeAuto = produto.unidadeDeVenda || "";
 
-    msg.innerText="✅ Produto encontrado";
+    msg.innerText = "✅ Produto encontrado";
 
-  }finally{
-    buscando=false;
+    if (lendo) {
+      Quagga.stop();
+      lendo = false;
+    }
+
+  } catch (err) {
+    alert("Erro ao buscar produto");
+    console.error(err);
+  } finally {
+    buscando = false;
   }
 }
+
 
 /* ===== ENVIO (IGUAL AO ORIGINAL) ===== */
 btn-enviar.onclick = () => {
