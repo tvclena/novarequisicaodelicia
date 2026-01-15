@@ -1,97 +1,89 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Requisição de Compras - DELÍCIA GOURMET</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Requisição de Compras - DELÍCIA GOURMET</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    body {
-      font-family: Inter, Arial, sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      padding: 30px;
-    }
-    .container {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-      max-width: 500px;
-      width: 100%;
-      padding: 25px;
-      position: relative;
-    }
-    h2 { text-align: center; margin-bottom: 20px; }
-    label { display: block; margin: 12px 0 5px; font-weight: bold; }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-    input[readonly] {
-      background:#f1f5f9;
-    }
-    textarea { resize: vertical; min-height: 60px; }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      margin: 6px 0;
-      border: none;
-      border-radius: 5px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    .btn-blue { background: #2196F3; color: #fff; }
-    .btn-dark { background: #0f172a; color: #fff; }
-    .btn-red { background: #f44336; color: #fff; }
-
-    video {
-      width: 100%;
-      margin-top: 10px;
-      border-radius: 8px;
-      background: #000;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 20px 0;
-      font-size: 14px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-
-    #msg { text-align: center; margin-top: 10px; font-weight: bold; }
-
-    #spinner {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border: 8px solid #f3f3f3;
-      border-top: 8px solid #2196F3;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      animation: spin 1s linear infinite;
-      z-index: 100;
-    }
-    @keyframes spin {
-      from { transform: translate(-50%, -50%) rotate(0deg); }
-      to   { transform: translate(-50%, -50%) rotate(360deg); }
-    }
-  </style>
+<style>
+body{
+  font-family:Inter,Arial,sans-serif;
+  background:#f5f5f5;
+  display:flex;
+  justify-content:center;
+  padding:30px;
+}
+.container{
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 0 15px rgba(0,0,0,.1);
+  max-width:500px;
+  width:100%;
+  padding:25px;
+  position:relative;
+}
+h2{text-align:center;margin-bottom:20px}
+label{display:block;margin:12px 0 5px;font-weight:600}
+input,select,textarea{
+  width:100%;
+  padding:10px;
+  border:1px solid #ccc;
+  border-radius:6px;
+  font-size:16px;
+}
+input[readonly]{background:#f1f5f9}
+textarea{resize:vertical;min-height:60px}
+button{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border:none;
+  border-radius:6px;
+  font-weight:700;
+  font-size:16px;
+  cursor:pointer;
+}
+.btn-blue{background:#2196F3;color:#fff}
+.btn-dark{background:#0f172a;color:#fff}
+.btn-red{background:#f44336;color:#fff}
+video{
+  width:100%;
+  margin-top:10px;
+  border-radius:6px;
+  background:#000;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+  font-size:14px;
+}
+th,td{
+  border:1px solid #ddd;
+  padding:6px;
+  text-align:center;
+}
+#msg{text-align:center;margin-top:10px;font-weight:600}
+#spinner{
+  display:none;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  border:8px solid #eee;
+  border-top:8px solid #2196F3;
+  border-radius:50%;
+  width:60px;
+  height:60px;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{
+  from{transform:translate(-50%,-50%) rotate(0)}
+  to{transform:translate(-50%,-50%) rotate(360deg)}
+}
+</style>
 </head>
 
 <body>
@@ -102,9 +94,11 @@
 <label>Solicitante</label>
 <select id="solicitante">
   <option value="">Selecione</option>
-  <option>ADM</option><option>Ruan</option><option>Renata</option>
-  <option>Lu</option><option>Bruna</option><option>Renan</option>
-  <option>Dheure</option><option>Marcelo</option>
+  <option>ADM</option>
+  <option>Ruan</option>
+  <option>Renata</option>
+  <option>Dheure</option>
+  <option>Marcelo</option>
 </select>
 
 <label>Setor</label>
@@ -122,13 +116,13 @@
 <label>Código de Barras</label>
 <input id="barcode" placeholder="Digite ou escaneie o código">
 
-<button class="btn-dark" onclick="buscarManual()">🔍 Pesquisar manualmente</button>
-<button class="btn-blue" onclick="abrirCamera()">📷 Ler com a câmera</button>
+<button class="btn-dark" id="btnManual">🔍 Pesquisar manualmente</button>
+<button class="btn-blue" id="btnCamera">📷 Ler com a câmera</button>
 
 <video id="video" autoplay playsinline muted></video>
 
 <label>Produto</label>
-<input id="item" readonly placeholder="Produto será preenchido automaticamente">
+<input id="item" readonly placeholder="Produto será buscado automaticamente">
 
 <label>Quantidade</label>
 <input type="number" id="quantidade" min="1">
@@ -138,21 +132,21 @@
 
 <div id="spinner"></div>
 
-<button id="btn-enviar" class="btn-blue" onclick="enviarItem()">ENVIAR ITEM</button>
-<button class="btn-red" onclick="limparTabela()">LIMPAR HISTÓRICO</button>
+<button class="btn-blue" id="btnEnviar">ENVIAR ITEM</button>
+<button class="btn-red" id="btnLimpar">LIMPAR HISTÓRICO</button>
 
 <p id="msg"></p>
 
 <h3>Itens enviados nesta sessão</h3>
 <table id="historico">
-  <tr>
-    <th>Produto</th>
-    <th>Unidade</th>
-    <th>Qtd</th>
-    <th>Setor</th>
-    <th>Hora</th>
-    <th>Status</th>
-  </tr>
+<tr>
+  <th>Produto</th>
+  <th>Unidade</th>
+  <th>Qtd</th>
+  <th>Setor</th>
+  <th>Hora</th>
+  <th>Status</th>
+</tr>
 </table>
 
 </div>
@@ -162,100 +156,127 @@
 <script>
 const URL_GAS = "https://script.google.com/macros/s/AKfycbyXFEAq56G7oQdeCzGw_SdOnQ7XkRPMzBoS1V09Pkk_wI916FGO9nn4e9FfeNmv8KV9KA/exec";
 
+let lendo = false;
+let buscando = false;
+let ultimoCodigo = null;
 let unidadeAuto = "";
-let lendo=false, buscando=false, ultimoCodigo=null;
-let enviados = JSON.parse(localStorage.getItem('enviados')) || [];
+let enviados = JSON.parse(localStorage.getItem("enviados")) || [];
 
-// ===== NORMALIZAÇÃO
+const video = document.getElementById("video");
+const msg = document.getElementById("msg");
+const spinner = document.getElementById("spinner");
+
+/* ================= NORMALIZAÇÃO ================= */
 function normalizarCodigo(c){
   c = String(c).trim();
   if(c.length >= 13) return c;
   return "0" + c;
 }
 
-// ===== CAMERA
-function abrirCamera(){
+/* ================= CAMERA ================= */
+document.getElementById("btnCamera").addEventListener("click", () => {
   if(lendo) return;
+  msg.innerText = "📷 Abrindo câmera...";
+  iniciarCamera();
+});
+
+function iniciarCamera(){
   lendo = true;
 
   Quagga.init({
     inputStream:{
       type:"LiveStream",
-      target:document.getElementById("video"),
-      constraints:{ facingMode:"environment" }
+      target: video,
+      constraints:{ facingMode: "environment" }
     },
-    decoder:{ readers:["ean_reader","upc_reader","code_128_reader"] },
+    decoder:{
+      readers:["ean_reader","upc_reader","code_128_reader"]
+    },
     locate:true
   }, err=>{
-    if(err){ alert(err.message); lendo=false; return; }
+    if(err){
+      msg.innerText = "❌ Erro ao acessar câmera";
+      lendo = false;
+      return;
+    }
     Quagga.start();
+    msg.innerText = "📸 Aponte para o código de barras";
   });
 
-  Quagga.onDetected(res=>{
+  Quagga.offDetected();
+  Quagga.onDetected(result => {
     if(buscando) return;
-    const code = res.codeResult?.code;
-    if(!code) return;
 
-    const final = normalizarCodigo(code);
-    if(final === ultimoCodigo) return;
-    ultimoCodigo = final;
+    const raw = result.codeResult?.code;
+    if(!raw) return;
 
-    buscarProduto(final);
+    const codigo = normalizarCodigo(raw);
+    if(codigo === ultimoCodigo) return;
+    ultimoCodigo = codigo;
+
+    buscarProduto(codigo);
   });
 }
 
-// ===== MANUAL
-function buscarManual(){
-  const code = barcode.value.trim();
-  if(!code){ alert("Digite o código"); return; }
+/* ================= MANUAL ================= */
+document.getElementById("btnManual").addEventListener("click", () => {
+  const code = document.getElementById("barcode").value.trim();
+  if(!code){
+    alert("Digite o código de barras");
+    return;
+  }
   buscarProduto(normalizarCodigo(code));
-}
+});
 
-// ===== BUSCA PRODUTO
+/* ================= BUSCA PRODUTO ================= */
 async function buscarProduto(barcode){
   buscando = true;
   document.getElementById("barcode").value = barcode;
+  msg.innerText = "🔎 Buscando produto...";
 
   try{
-    const r = await fetch(`/api/buscar-barcode?barcode=${barcode}`);
-    const j = await r.json();
+    const resp = await fetch(`/api/buscar-barcode?barcode=${barcode}`);
+    const json = await resp.json();
 
-    if(!j.items || !j.items.length){
+    if(!json.items || !json.items.length){
       alert("Produto não encontrado");
       return;
     }
 
-    item.value = j.items[0].descricao;
-    unidadeAuto = j.items[0].unidadeDeVenda || "";
+    document.getElementById("item").value = json.items[0].descricao;
+    unidadeAuto = json.items[0].unidadeDeVenda || "";
 
     if(lendo){
       Quagga.stop();
       lendo = false;
     }
 
+    msg.innerText = "✅ Produto encontrado";
+
+  }catch(e){
+    alert("Erro ao buscar produto");
   }finally{
     buscando = false;
   }
 }
 
-// ===== ENVIO
-function enviarItem(){
-  const solicitante = document.getElementById('solicitante').value.trim();
-  const setor = document.getElementById('setor').value.trim();
-  const produto = document.getElementById('item').value.trim();
-  const quantidade = document.getElementById('quantidade').value.trim();
-  const observacoes = document.getElementById('observacoes').value.trim();
-  const horaEnvio = new Date().toLocaleTimeString();
+/* ================= ENVIO ================= */
+document.getElementById("btnEnviar").addEventListener("click", () => {
+  const solicitante = solicitante.value.trim();
+  const setor = setor.value.trim();
+  const produto = item.value.trim();
+  const quantidade = document.getElementById("quantidade").value.trim();
+  const observacoes = document.getElementById("observacoes").value.trim();
+  const hora = new Date().toLocaleTimeString();
 
   if(!solicitante || !setor || !produto || !quantidade){
-    msg.innerText = "⚠️ Preencha tudo!";
+    msg.innerText = "⚠️ Preencha todos os campos";
     return;
   }
 
   spinner.style.display = "block";
-  btn-enviar.disabled = true;
 
-  enviados.push({ item:produto, unidade:unidadeAuto, quantidade, setor, hora:horaEnvio, status:"Processando" });
+  enviados.push({ item:produto, unidade:unidadeAuto, quantidade, setor, hora, status:"Processando" });
   atualizarTabela();
 
   fetch(URL_GAS,{
@@ -273,37 +294,47 @@ function enviarItem(){
     enviados[enviados.length-1].status="Enviado";
     atualizarTabela();
     limparCampos();
-    alert("✅ Item enviado!");
+    alert("✅ Item enviado com sucesso");
   }).finally(()=>{
-    spinner.style.display="none";
-    btn-enviar.disabled = false;
+    spinner.style.display = "none";
   });
+});
+
+/* ================= UTIL ================= */
+document.getElementById("btnLimpar").addEventListener("click", () => {
+  enviados = [];
+  localStorage.removeItem("enviados");
+  atualizarTabela();
+});
+
+function limparCampos(){
+  barcode.value = "";
+  item.value = "";
+  quantidade.value = "";
+  observacoes.value = "";
 }
 
-// ===== UTIL
-function limparCampos(){
-  item.value="";
-  barcode.value="";
-  quantidade.value="";
-  observacoes.value="";
-}
 function atualizarTabela(){
-  const tabela = document.getElementById('historico');
-  tabela.innerHTML = `<tr><th>Produto</th><th>Unidade</th><th>Qtd</th><th>Setor</th><th>Hora</th><th>Status</th></tr>`;
+  const tabela = document.getElementById("historico");
+  tabela.innerHTML = `
+    <tr>
+      <th>Produto</th>
+      <th>Unidade</th>
+      <th>Qtd</th>
+      <th>Setor</th>
+      <th>Hora</th>
+      <th>Status</th>
+    </tr>`;
   enviados.forEach(i=>{
     const r = tabela.insertRow();
-    r.insertCell(0).innerText=i.item;
-    r.insertCell(1).innerText=i.unidade;
-    r.insertCell(2).innerText=i.quantidade;
-    r.insertCell(3).innerText=i.setor;
-    r.insertCell(4).innerText=i.hora;
-    r.insertCell(5).innerText=i.status;
+    r.insertCell(0).innerText = i.item;
+    r.insertCell(1).innerText = i.unidade;
+    r.insertCell(2).innerText = i.quantidade;
+    r.insertCell(3).innerText = i.setor;
+    r.insertCell(4).innerText = i.hora;
+    r.insertCell(5).innerText = i.status;
   });
-  localStorage.setItem('enviados', JSON.stringify(enviados));
-}
-function limparTabela(){
-  enviados=[];
-  atualizarTabela();
+  localStorage.setItem("enviados", JSON.stringify(enviados));
 }
 
 atualizarTabela();
