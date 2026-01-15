@@ -2,37 +2,93 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Requisição de Compras - DELÍCIA GOURMET</title>
+<title>Requisição de Compras – DELÍCIA GOURMET</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial, sans-serif; background: #f5f5f5; display: flex; justify-content: center; padding: 30px; }
-.container { background: #fff; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.1); max-width: 500px; width: 100%; padding: 25px; position: relative; }
-h2 { text-align: center; color: #333; margin-bottom: 20px; }
-label { display: block; margin: 12px 0 5px; font-weight: bold; }
-input, select, textarea {
-  width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px;
+body{
+  font-family:Arial, sans-serif;
+  background:#f5f5f5;
+  display:flex;
+  justify-content:center;
+  padding:30px;
 }
-input[readonly]{ background:#f1f5f9; }
-textarea { resize: vertical; min-height: 60px; }
-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
-th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-button { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; }
-.btn-blue { background: #2196F3; color: #fff; }
-.btn-dark { background: #0f172a; color: #fff; }
-.btn-red { background: #f44336; color: #fff; }
-video{ width:100%; margin-top:10px; border-radius:8px; background:#000; }
-#msg { text-align: center; margin-top: 10px; font-weight: bold; }
-#spinner {
-  display: none; position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  border: 8px solid #f3f3f3;
-  border-top: 8px solid #2196F3; border-radius: 50%;
-  width: 60px; height: 60px; animation: spin 1s linear infinite; z-index: 100;
+.container{
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 0 15px rgba(0,0,0,.1);
+  max-width:520px;
+  width:100%;
+  padding:25px;
+  position:relative;
 }
-@keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
+h2{text-align:center;margin-bottom:20px}
+label{display:block;margin:12px 0 5px;font-weight:bold}
+input,select,textarea{
+  width:100%;
+  padding:10px;
+  border:1px solid #ccc;
+  border-radius:5px;
+  font-size:16px;
+}
+input[readonly]{background:#f1f5f9}
+textarea{resize:vertical;min-height:60px}
+button{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border:none;
+  border-radius:5px;
+  font-weight:bold;
+  font-size:16px;
+  cursor:pointer;
+}
+.btn-blue{background:#2196F3;color:#fff}
+.btn-dark{background:#0f172a;color:#fff}
+.btn-red{background:#f44336;color:#fff}
+video{
+  width:100%;
+  margin-top:10px;
+  border-radius:8px;
+  background:#000;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+  font-size:14px;
+}
+th,td{
+  border:1px solid #ddd;
+  padding:6px;
+  text-align:center;
+}
+#msg{text-align:center;margin-top:10px;font-weight:bold}
+#spinner{
+  display:none;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  border:8px solid #eee;
+  border-top:8px solid #2196F3;
+  border-radius:50%;
+  width:60px;
+  height:60px;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{
+  from{transform:translate(-50%,-50%) rotate(0)}
+  to{transform:translate(-50%,-50%) rotate(360deg)}
+}
+pre{
+  background:#020617;
+  color:#e5e7eb;
+  padding:12px;
+  border-radius:8px;
+  font-size:12px;
+  max-height:260px;
+  overflow:auto;
 }
 </style>
 </head>
@@ -45,16 +101,17 @@ video{ width:100%; margin-top:10px; border-radius:8px; background:#000; }
 <label>Solicitante</label>
 <select id="solicitante">
   <option value="">Selecione</option>
-  <option>ADM</option><option>Ruan</option><option>Renata</option>
-  <option>Lu</option><option>Bruna</option><option>Renan</option>
-  <option>Dheure</option><option>Marcelo</option>
+  <option>ADM</option>
+  <option>Dheure</option>
+  <option>Marcelo</option>
 </select>
 
 <label>Setor</label>
 <select id="setor">
   <option value="">Selecione</option>
-  <option>Cozinha</option><option>Limpeza</option>
-  <option>Bar</option><option>Sushi</option><option>Gerência</option>
+  <option>Cozinha</option>
+  <option>Limpeza</option>
+  <option>Bar</option>
 </select>
 
 <hr>
@@ -78,15 +135,25 @@ video{ width:100%; margin-top:10px; border-radius:8px; background:#000; }
 
 <div id="spinner"></div>
 
-<button id="btn-enviar" class="btn-blue">ENVIAR ITEM</button>
+<button id="btnEnviar" class="btn-blue">ENVIAR ITEM</button>
 <button class="btn-red" onclick="limparTabela()">LIMPAR HISTÓRICO</button>
 
 <p id="msg"></p>
 
-<h3>Itens enviados nesta sessão</h3>
+<h3>Histórico</h3>
 <table id="historico">
-<tr><th>Produto</th><th>Unidade</th><th>Qtd</th><th>Setor</th><th>Hora</th><th>Status</th></tr>
+<tr>
+  <th>Produto</th>
+  <th>Unidade</th>
+  <th>Qtd</th>
+  <th>Setor</th>
+  <th>Hora</th>
+  <th>Status</th>
+</tr>
 </table>
+
+<h3>🧪 DEBUG (tudo que acontece)</h3>
+<pre id="debug"></pre>
 
 </div>
 
@@ -95,21 +162,38 @@ video{ width:100%; margin-top:10px; border-radius:8px; background:#000; }
 <script>
 const URL_GAS = "https://script.google.com/macros/s/AKfycbyXFEAq56G7oQdeCzGw_SdOnQ7XkRPMzBoS1V09Pkk_wI916FGO9nn4e9FfeNmv8KV9KA/exec";
 
-let unidadeAuto = "";
-let lendo=false, buscando=false, ultimoCodigo=null;
-let enviados = JSON.parse(localStorage.getItem('enviados')) || [];
+const debugEl = document.getElementById("debug");
+const msg = document.getElementById("msg");
+const spinner = document.getElementById("spinner");
+const video = document.getElementById("video");
 
-/* ===== NORMALIZAÇÃO EAN / UPC ===== */
-function normalizarCodigo(c){
-  c=String(c).trim();
-  if(c.length>=13) return c;
-  return "0"+c;
+let lendo=false, buscando=false, ultimoCodigo=null;
+let unidadeAuto="";
+let enviados=JSON.parse(localStorage.getItem("enviados"))||[];
+
+function log(txt){
+  console.log(txt);
+  debugEl.textContent += txt + "\n";
+  debugEl.scrollTop = debugEl.scrollHeight;
 }
 
+function normalizarCodigo(c){
+  c=String(c).trim();
+  return c.length>=13 ? c : "0"+c;
+}
+
+/* ===== BUSCA MANUAL ===== */
+btnManual.onclick=()=>{
+  const code=document.getElementById("barcode").value.trim();
+  if(!code) return alert("Digite o código");
+  buscarProduto(normalizarCodigo(code));
+};
+
 /* ===== CAMERA ===== */
-btnCamera.onclick = () => {
+btnCamera.onclick=()=>{
   if(lendo) return;
-  lendo = true;
+  lendo=true;
+  log("📷 Abrindo câmera");
 
   Quagga.init({
     inputStream:{
@@ -119,9 +203,14 @@ btnCamera.onclick = () => {
     },
     decoder:{readers:["ean_reader","upc_reader","code_128_reader"]},
     locate:true
-  }, err=>{
-    if(err){ alert("Erro ao abrir câmera"); lendo=false; return; }
+  },err=>{
+    if(err){
+      log("❌ ERRO CAMERA: "+err.message);
+      lendo=false;
+      return;
+    }
     Quagga.start();
+    log("✅ Câmera ativa");
   });
 
   Quagga.offDetected();
@@ -130,77 +219,67 @@ btnCamera.onclick = () => {
     const raw=res.codeResult?.code;
     if(!raw) return;
 
-    const final=normalizarCodigo(raw);
-    if(final===ultimoCodigo) return;
-    ultimoCodigo=final;
+    const code=normalizarCodigo(raw);
+    if(code===ultimoCodigo) return;
+    ultimoCodigo=code;
 
-    buscarProduto(final);
+    buscarProduto(code);
   });
 };
 
-/* ===== MANUAL ===== */
-btnManual.onclick = () => {
-  const code=barcode.value.trim();
-  if(!code) return alert("Digite o código");
-  buscarProduto(normalizarCodigo(code));
-};
+/* ===== BUSCA PRODUTO ===== */
+async function buscarProduto(code){
+  buscando=true;
+  document.getElementById("barcode").value=code;
+  msg.innerText="🔎 Buscando produto...";
+  log("🔍 Buscando: "+code);
 
-async function buscarProduto(codigo) {
-  buscando = true;
+  try{
+    const r=await fetch(`/api/buscar-barcode?barcode=${code}`);
+    const j=await r.json();
+    log("📦 API RESPONSE: "+JSON.stringify(j));
 
-  const inputBarcode = document.getElementById("barcode");
-  inputBarcode.value = codigo;
-
-  msg.innerText = "🔎 Buscando produto...";
-
-  try {
-    const resp = await fetch(`/api/buscar-barcode?barcode=${codigo}`);
-    const json = await resp.json();
-
-    if (!json.items || !json.items.length) {
-      alert("Produto não encontrado");
+    if(!j.items || !j.items.length){
+      msg.innerText="❌ Produto não encontrado";
+      log("⚠️ Produto não encontrado");
       return;
     }
 
-    const produto = json.items[0];
+    const p=j.items[0];
+    document.getElementById("item").value=p.descricao;
+    unidadeAuto=p.unidadeDeVenda||"";
+    msg.innerText="✅ Produto encontrado";
 
-    document.getElementById("item").value = produto.descricao;
-    unidadeAuto = produto.unidadeDeVenda || "";
-
-    msg.innerText = "✅ Produto encontrado";
-
-    if (lendo) {
+    if(lendo){
       Quagga.stop();
-      lendo = false;
+      lendo=false;
+      log("🛑 Câmera parada");
     }
 
-  } catch (err) {
-    alert("Erro ao buscar produto");
-    console.error(err);
-  } finally {
-    buscando = false;
+  }catch(e){
+    msg.innerText="❌ ERRO NA BUSCA";
+    log("❌ ERRO: "+e.message);
+  }finally{
+    buscando=false;
   }
 }
 
-
-/* ===== ENVIO (IGUAL AO ORIGINAL) ===== */
-btn-enviar.onclick = () => {
-  const solicitante=solicitante.value.trim();
-  const setor=setor.value.trim();
-  const produto=item.value.trim();
-  const quantidade=quantidade.value.trim();
-  const observacoes=observacoes.value.trim();
+/* ===== ENVIO ===== */
+btnEnviar.onclick=()=>{
+  const solicitante=solicitante.value;
+  const setor=setor.value;
+  const produto=item.value;
+  const quantidade=quantidade.value;
+  const observacoes=observacoes.value;
   const hora=new Date().toLocaleTimeString();
 
   if(!solicitante||!setor||!produto||!quantidade){
-    msg.innerText="⚠️ Preencha tudo!";
+    msg.innerText="⚠️ Preencha tudo";
     return;
   }
 
   spinner.style.display="block";
-  btn-enviar.disabled=true;
-
-  enviados.push({item:produto, unidade:unidadeAuto, quantidade, setor, hora, status:"Processando"});
+  enviados.push({item:produto,unidade:unidadeAuto,quantidade,setor,hora,status:"Processando"});
   atualizarTabela();
 
   fetch(URL_GAS,{
@@ -218,20 +297,21 @@ btn-enviar.onclick = () => {
     enviados[enviados.length-1].status="Enviado";
     atualizarTabela();
     limparCampos();
-    alert("✅ Item enviado!");
+    alert("✅ Enviado");
+  }).catch(e=>{
+    log("❌ ERRO GAS: "+e.message);
   }).finally(()=>{
     spinner.style.display="none";
-    btn-enviar.disabled=false;
   });
 };
 
-/* ===== UTIL ===== */
 function limparCampos(){
-  item.value="";
   barcode.value="";
+  item.value="";
   quantidade.value="";
   observacoes.value="";
 }
+
 function atualizarTabela(){
   historico.innerHTML=`<tr><th>Produto</th><th>Unidade</th><th>Qtd</th><th>Setor</th><th>Hora</th><th>Status</th></tr>`;
   enviados.forEach(i=>{
@@ -243,8 +323,9 @@ function atualizarTabela(){
     r.insertCell(4).innerText=i.hora;
     r.insertCell(5).innerText=i.status;
   });
-  localStorage.setItem('enviados',JSON.stringify(enviados));
+  localStorage.setItem("enviados",JSON.stringify(enviados));
 }
+
 function limparTabela(){
   enviados=[];
   atualizarTabela();
