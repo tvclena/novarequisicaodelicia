@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Requisição de Compras – DELÍCIA GOURMET</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <style>
 body{
@@ -11,34 +11,34 @@ body{
   background:#f5f5f5;
   display:flex;
   justify-content:center;
-  padding:30px;
+  padding:20px;
 }
 .container{
   background:#fff;
-  border-radius:10px;
+  border-radius:12px;
   box-shadow:0 0 15px rgba(0,0,0,.1);
-  max-width:520px;
+  max-width:540px;
   width:100%;
-  padding:25px;
+  padding:22px;
   position:relative;
 }
 h2{text-align:center;margin-bottom:20px}
-label{display:block;margin:12px 0 5px;font-weight:bold}
+label{display:block;margin:12px 0 6px;font-weight:bold}
 input,select,textarea{
   width:100%;
-  padding:10px;
+  padding:12px;
   border:1px solid #ccc;
-  border-radius:5px;
+  border-radius:6px;
   font-size:16px;
 }
 input[readonly]{background:#f1f5f9}
-textarea{resize:vertical;min-height:60px}
+textarea{resize:vertical;min-height:70px}
 button{
   width:100%;
-  padding:12px;
-  margin:6px 0;
+  padding:14px;
+  margin:8px 0;
   border:none;
-  border-radius:5px;
+  border-radius:6px;
   font-weight:bold;
   font-size:16px;
   cursor:pointer;
@@ -49,7 +49,7 @@ button{
 video{
   width:100%;
   margin-top:10px;
-  border-radius:8px;
+  border-radius:10px;
   background:#000;
 }
 table{
@@ -90,6 +90,15 @@ pre{
   max-height:260px;
   overflow:auto;
 }
+.badge{
+  display:inline-block;
+  padding:6px 12px;
+  background:#e0f2fe;
+  color:#0369a1;
+  border-radius:999px;
+  font-weight:bold;
+  margin-top:6px;
+}
 </style>
 </head>
 
@@ -122,10 +131,12 @@ pre{
 <button class="btn-dark" id="btnManual">🔍 Pesquisar manualmente</button>
 <button class="btn-blue" id="btnCamera">📷 Ler com a câmera</button>
 
-<video id="video" autoplay playsinline muted></video>
+<video id="video" autoplay muted playsinline></video>
 
 <label>Produto</label>
 <input id="item" readonly placeholder="Produto será preenchido automaticamente">
+
+<div id="unidadeBox"></div>
 
 <label>Quantidade</label>
 <input type="number" id="quantidade" min="1">
@@ -152,7 +163,7 @@ pre{
 </tr>
 </table>
 
-<h3>🧪 DEBUG</h3>
+<h3>🧪 DEBUG (tudo que acontece)</h3>
 <pre id="debug"></pre>
 
 </div>
@@ -166,116 +177,182 @@ const debugEl = document.getElementById("debug");
 const msg = document.getElementById("msg");
 const spinner = document.getElementById("spinner");
 const video = document.getElementById("video");
+const unidadeBox = document.getElementById("unidadeBox");
 
-let lendo=false, buscando=false, ultimoCodigo=null;
+let lendo=false;
+let buscando=false;
+let ultimoCodigo=null;
 let unidadeAuto="";
 let enviados=JSON.parse(localStorage.getItem("enviados"))||[];
 
 function log(t){
   console.log(t);
-  debugEl.textContent+=t+"\n";
-  debugEl.scrollTop=debugEl.scrollHeight;
+  debugEl.textContent += t + "\n";
+  debugEl.scrollTop = debugEl.scrollHeight;
 }
 
+/* 🔢 NORMALIZA CÓDIGO (SEMPRE 0 À ESQUERDA) */
 function normalizarCodigo(c){
-  c=String(c).trim();
-  return c.length>=13?c:"0"+c;
+  c = String(c).replace(/\D/g,"").trim();
+  if(c.length >= 13) return c;
+  return "0" + c;
 }
 
-btnManual.onclick=()=>{
-  const code=document.getElementById("barcode").value.trim();
+/* 🔍 BUSCA MANUAL */
+btnManual.onclick = () => {
+  const code = document.getElementById("barcode").value.trim();
   if(!code) return alert("Digite o código");
   buscarProduto(normalizarCodigo(code));
 };
 
-btnCamera.onclick=()=>{
+/* 📷 CAMERA ANDROID + IPHONE */
+btnCamera.onclick = () => {
   if(lendo) return;
-  lendo=true;
+  lendo = true;
   log("📷 Abrindo câmera");
 
   Quagga.init({
-    inputStream:{type:"LiveStream",target:video,constraints:{facingMode:"environment"}},
-    decoder:{readers:["ean_reader","upc_reader","code_128_reader"]},
+    inputStream:{
+      type:"LiveStream",
+      target:video,
+      constraints:{
+        facingMode:"environment",
+        width:{min:640},
+        height:{min:480}
+      }
+    },
+    decoder:{
+      readers:[
+        "ean_reader",
+        "ean_8_reader",
+        "upc_reader",
+        "code_128_reader"
+      ]
+    },
     locate:true
-  },err=>{
-    if(err){log("❌ ERRO CAMERA: "+err.message);lendo=false;return;}
+  }, err=>{
+    if(err){
+      log("❌ ERRO CAMERA: "+err.message);
+      lendo=false;
+      return;
+    }
     Quagga.start();
+    log("✅ Câmera ativa");
   });
 
   Quagga.offDetected();
   Quagga.onDetected(res=>{
     if(buscando) return;
-    const raw=res.codeResult?.code;
+
+    const raw = res.codeResult?.code;
     if(!raw) return;
-    const code=normalizarCodigo(raw);
-    if(code===ultimoCodigo) return;
-    ultimoCodigo=code;
+
+    const code = normalizarCodigo(raw);
+    if(code === ultimoCodigo) return;
+
+    ultimoCodigo = code;
     buscarProduto(code);
   });
 };
 
+/* 🔎 BUSCAR PRODUTO */
 async function buscarProduto(code){
-  buscando=true;
-  document.getElementById("barcode").value=code;
-  msg.innerText="🔎 Buscando produto...";
-  log("🔍 "+code);
+  buscando = true;
+  document.getElementById("barcode").value = code;
+
+  msg.innerText = "🔎 Buscando produto...";
+  log("🔍 Buscando: " + code);
 
   try{
-    const r=await fetch(`/api/buscar-barcode?barcode=${code}`);
-    const j=await r.json();
-    log(JSON.stringify(j,null,2));
+    const resp = await fetch(`/api/buscar-barcode?barcode=${code}`);
+    const json = await resp.json();
 
-    if(!j.produto){
-      msg.innerText="❌ Produto não encontrado";
+    log("📦 API RESPONSE:");
+    log(JSON.stringify(json,null,2));
+
+    if(!json.produto){
+      msg.innerText = "❌ Produto não encontrado";
       return;
     }
 
-    document.getElementById("item").value=j.produto.descricao.trim();
-    unidadeAuto=j.produto.unidadeDeVenda||"";
-    msg.innerText="✅ Produto encontrado";
+    const p = json.produto;
 
-    if(lendo){Quagga.stop();lendo=false;}
+    document.getElementById("item").value = p.descricao.trim();
+    unidadeAuto = p.unidadeDeVenda || "";
+
+    unidadeBox.innerHTML = unidadeAuto
+      ? `<div class="badge">📏 Unidade: ${unidadeAuto}</div>`
+      : "";
+
+    msg.innerText = "✅ Produto encontrado";
+    log("✅ Produto: " + p.descricao);
+    log("📏 Unidade: " + unidadeAuto);
+
+    if(lendo){
+      Quagga.stop();
+      lendo = false;
+      log("🛑 Câmera parada");
+    }
 
   }catch(e){
-    msg.innerText="❌ Erro";
-    log(e.message);
+    msg.innerText = "❌ Erro ao buscar produto";
+    log("❌ ERRO: "+e.message);
   }finally{
-    buscando=false;
+    buscando = false;
   }
 }
 
-btnEnviar.onclick=()=>{
-  const solicitanteEl=document.getElementById("solicitante");
-  const setorEl=document.getElementById("setor");
-  const itemEl=document.getElementById("item");
-  const quantidadeEl=document.getElementById("quantidade");
-  const observacoesEl=document.getElementById("observacoes");
+/* 📤 ENVIO */
+btnEnviar.onclick = () => {
+  const solicitante = document.getElementById("solicitante").value;
+  const setor = document.getElementById("setor").value;
+  const produto = document.getElementById("item").value;
+  const quantidade = document.getElementById("quantidade").value;
+  const observacoes = document.getElementById("observacoes").value;
+  const hora = new Date().toLocaleTimeString();
 
-  const solicitante=solicitanteEl.value;
-  const setor=setorEl.value;
-  const produto=itemEl.value;
-  const quantidade=quantidadeEl.value;
-  const observacoes=observacoesEl.value;
-  const hora=new Date().toLocaleTimeString();
-
-  if(!solicitante||!setor||!produto||!quantidade){
+  if(!solicitante || !setor || !produto || !quantidade){
     msg.innerText="⚠️ Preencha tudo";
     return;
   }
 
   spinner.style.display="block";
-  enviados.push({item:produto,unidade:unidadeAuto,quantidade,setor,hora,status:"Processando"});
+
+  enviados.push({
+    item:produto,
+    unidade:unidadeAuto,
+    quantidade,
+    setor,
+    hora,
+    status:"Processando"
+  });
+
   atualizarTabela();
 
   fetch(URL_GAS,{
     method:"POST",
-    body:JSON.stringify({acao:"cadastrar",item:produto,unidade:unidadeAuto,quantidade,setor,solicitante,observacoes})
-  }).then(()=>{
+    body:JSON.stringify({
+      acao:"cadastrar",
+      item:produto,
+      unidade:unidadeAuto,
+      quantidade,
+      setor,
+      solicitante,
+      observacoes
+    })
+  })
+  .then(()=>{
     enviados[enviados.length-1].status="Enviado";
     atualizarTabela();
     limparCampos();
-    alert("✅ Enviado");
-  }).finally(()=>spinner.style.display="none");
+    alert("✅ Enviado com sucesso");
+  })
+  .catch(e=>{
+    log("❌ ERRO GAS: "+e.message);
+  })
+  .finally(()=>{
+    spinner.style.display="none";
+  });
 };
 
 function limparCampos(){
@@ -283,12 +360,17 @@ function limparCampos(){
   item.value="";
   quantidade.value="";
   observacoes.value="";
+  unidadeBox.innerHTML="";
 }
 
 function atualizarTabela(){
-  historico.innerHTML=`<tr><th>Produto</th><th>Unidade</th><th>Qtd</th><th>Setor</th><th>Hora</th><th>Status</th></tr>`;
+  historico.innerHTML = `
+  <tr>
+    <th>Produto</th><th>Unidade</th><th>Qtd</th>
+    <th>Setor</th><th>Hora</th><th>Status</th>
+  </tr>`;
   enviados.forEach(i=>{
-    const r=historico.insertRow();
+    const r = historico.insertRow();
     r.insertCell(0).innerText=i.item;
     r.insertCell(1).innerText=i.unidade;
     r.insertCell(2).innerText=i.quantidade;
