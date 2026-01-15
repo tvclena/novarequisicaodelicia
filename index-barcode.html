@@ -227,42 +227,50 @@ btnCamera.onclick=()=>{
   });
 };
 
-/* ===== BUSCA PRODUTO ===== */
 async function buscarProduto(code){
-  buscando=true;
-  document.getElementById("barcode").value=code;
-  msg.innerText="🔎 Buscando produto...";
-  log("🔍 Buscando: "+code);
+  buscando = true;
+  document.getElementById("barcode").value = code;
 
-  try{
-    const r=await fetch(`/api/buscar-barcode?barcode=${code}`);
-    const j=await r.json();
-    log("📦 API RESPONSE: "+JSON.stringify(j));
+  msg.innerText = "🔎 Buscando produto...";
+  log("🔍 Buscando: " + code);
 
-    if(!j.items || !j.items.length){
-      msg.innerText="❌ Produto não encontrado";
-      log("⚠️ Produto não encontrado");
+  try {
+    const resp = await fetch(`/api/buscar-barcode?barcode=${code}`);
+    const json = await resp.json();
+
+    log("📦 API RESPONSE:");
+    log(JSON.stringify(json, null, 2));
+
+    // ✅ PRODUTO VEM AQUI
+    if (!json.produto) {
+      msg.innerText = "❌ Produto não encontrado";
+      log("⚠️ json.produto inexistente");
       return;
     }
 
-    const p=j.items[0];
-    document.getElementById("item").value=p.descricao;
-    unidadeAuto=p.unidadeDeVenda||"";
-    msg.innerText="✅ Produto encontrado";
+    const p = json.produto;
 
-    if(lendo){
+    document.getElementById("item").value = p.descricao.trim();
+    unidadeAuto = p.unidadeDeVenda || "";
+
+    msg.innerText = "✅ Produto encontrado";
+    log("✅ Produto: " + p.descricao);
+    log("📏 Unidade: " + unidadeAuto);
+
+    if (lendo) {
       Quagga.stop();
-      lendo=false;
+      lendo = false;
       log("🛑 Câmera parada");
     }
 
-  }catch(e){
-    msg.innerText="❌ ERRO NA BUSCA";
-    log("❌ ERRO: "+e.message);
-  }finally{
-    buscando=false;
+  } catch (e) {
+    msg.innerText = "❌ Erro ao buscar produto";
+    log("❌ ERRO: " + e.message);
+  } finally {
+    buscando = false;
   }
 }
+
 
 /* ===== ENVIO ===== */
 btnEnviar.onclick=()=>{
