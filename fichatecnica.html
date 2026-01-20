@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Ficha Técnica | CLENA</title>
+
+<style>
+:root {
+  --primary: #ff6a00;
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #333;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: var(--bg);
+  font-family: Inter, Arial, sans-serif;
+  color: var(--text);
+}
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+  background: var(--card);
+  padding: 24px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.06);
+}
+
+h2, h3 {
+  margin-top: 0;
+}
+
+label {
+  font-weight: 600;
+  margin-top: 12px;
+  display: block;
+}
+
+input, select, textarea, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: .9;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.badge {
+  display: inline-block;
+  background: #eee;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.total-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.total-box div {
+  background: #fafafa;
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.total-box strong {
+  font-size: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📋 Ficha Técnica do Produto</h2>
+
+<label>Buscar Produto (ID ou Nome)</label>
+<input id="buscaProduto" placeholder="Ex: 123 ou Pizza Calabresa">
+<button onclick="buscarProduto()">Buscar no Varejo</button>
+
+<label>Produto</label>
+<input id="nomeProduto">
+
+<div class="badge">Unidade do produto: <strong id="unProduto">—</strong></div>
+
+<label>Foto do Produto</label>
+<input type="file" id="fotoProduto">
+
+<hr>
+
+<h3>🍳 Receita</h3>
+
+<div class="grid">
+  <input placeholder="Ingrediente" id="ing">
+  <input type="number" placeholder="Qtd" id="qtd">
+  <select id="un">
+    <option>g</option><option>kg</option><option>ml</option><option>l</option>
+    <option>un</option><option>pct</option><option>cx</option>
+    <option>colher (sopa)</option><option>colher (chá)</option>
+    <option>xícara</option>
+  </select>
+  <input type="number" placeholder="Custo unit." id="custo">
+  <button onclick="addIngrediente()">+</button>
+</div>
+
+<div id="lista"></div>
+
+<hr>
+
+<h3>📐 Rendimento</h3>
+
+<label>Quantidade produzida (rendimento)</label>
+<input type="number" id="rendimento" placeholder="Ex: 10">
+
+<div class="total-box">
+  <div>
+    <span>Custo Total</span><br>
+    <strong>R$ <span id="total">0.00</span></strong>
+  </div>
+  <div>
+    <span>Rendimento</span><br>
+    <strong><span id="rendLabel">0</span></strong>
+  </div>
+  <div>
+    <span>Custo Unitário</span><br>
+    <strong>R$ <span id="unitario">0.00</span></strong>
+  </div>
+</div>
+
+<label>Observações</label>
+<textarea id="obs"></textarea>
+
+<button onclick="salvarFicha()">Salvar Ficha Técnica</button>
+
+</div>
+
+<script>
+let receita = [];
+let total = 0;
+let unidadeProduto = '';
+
+function buscarProduto() {
+  fetch('/api/varejo/produto?busca=' + buscaProduto.value)
+    .then(r => r.json())
+    .then(d => {
+      nomeProduto.value = d.nome;
+      unidadeProduto = d.unidade;
+      document.getElementById('unProduto').innerText = unidadeProduto;
+    });
+}
+
+function addIngrediente() {
+  const qtd = parseFloat(qtdInput.value || qtd.value);
+  const custo = parseFloat(document.getElementById('custo').value);
+  const totalItem = qtd * custo;
+
+  receita.push({
+    ingrediente: ing.value,
+    quantidade: qtd,
+    unidade: un.value,
+    custo_unitario: custo,
+    custo_total: totalItem
+  });
+
+  total += totalItem;
+  render();
+}
+
+function render() {
+  lista.innerHTML = receita.map(r =>
+    `<p>${r.ingrediente} - ${r.quantidade} ${r.unidade} (R$ ${r.custo_total.toFixed(2)})</p>`
+  ).join('');
+
+  totalSpan = document.getElementById('total');
+  totalSpan.innerText = total.toFixed(2);
+
+  const rend = parseFloat(document.getElementById('rendimento').value || 0);
+  document.getElementById('rendLabel').innerText = rend;
+
+  if (rend > 0) {
+    document.getElementById('unitario').innerText = (total / rend).toFixed(2);
+  }
+}
+
+document.getElementById('rendimento').addEventListener('input', render);
+
+function salvarFicha() {
+  const formData = new FormData();
+  formData.append('produto_nome', nomeProduto.value);
+  formData.append('unidade_produto', unidadeProduto);
+  formData.append('custo_total', total);
+  formData.append('rendimento', rendimento.value);
+  formData.append('custo_unitario', (total / rendimento.value));
+  formData.append('receita', JSON.stringify(receita));
+  formData.append('obs', obs.value);
+  formData.append('foto', fotoProduto.files[0]);
+
+  fetch('/api/ficha-tecnica', {
+    method: 'POST',
+    body: formData
+  }).then(() => alert('Ficha técnica salva com sucesso'));
+}
+</script>
+
+</body>
+</html>
